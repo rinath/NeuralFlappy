@@ -2,22 +2,43 @@ function Bot(birb, cols){
   this.birb = birb;
   this.cols = cols;
   this.nn = new NeuralNetwork(5, 3, 2);
+  this.data = new Array(this.nn.getAmountOfWeights());
+  this.bestData = new Array(this.nn.getAmountOfWeights());
+  for (let i = 0; i < this.data.length; i++){
+    this.data[i] = Math.random() * 20 - 10;
+    this.bestData[i] = this.data[i];
+  }
+  this.nn.setWeights(this.data);
+  this.collisionFrame = -1;
 
-  var frame = 0;
-  this.update = function(gameSpeed){
-    /*frame++;
-    //if (frame % 39 == 0){
-      frame = 0;
-      this.birb.jump();
-    }
-    */
-    var nearestColumn = this.cols.nearestColumn(this.birb);
-    var data = nearestColumn.concat([this.birb.vel, gameSpeed]);
-    //console.log(data);
+  this.update = function(gameSpeed, score){
+    let nearestColumn = this.cols.nearestColumn(this.birb);
+    let data = nearestColumn.concat([this.birb.vel, gameSpeed]);
     let output = this.nn.forwardPropagation(data);
-    //console.log('forwardProp:' + output);
     if (output[0] > 0)
       this.birb.jump();
+    if (this.collisionFrame >= 0)
+      this.collisionFrame--;
+    if (this.collisionFrame == 0){
+      this.newEpoch(score);
+    }
+  }
+
+  this.onCollision = function(){
+    this.collisionFrame = 2;
+    console.log('Bot.onCollision');
+  }
+
+  let prevScore = 0;
+  this.newEpoch = function(score){
+    // TODO: todododototdoooo
+    if (prevScore);
+    for (let i = 0; i < this.data.length; i++){
+      this.data[i] += Math.random() * 2 - 1;
+    }
+    this.nn.setWeights(this.data);
+    this.nn.showWeights();
+    prevScore = score;
   }
 }
 
@@ -33,15 +54,15 @@ function NeuralNetwork(){
     for (let j = 0; j < arguments[i]; j++)
       this.outputs[i].push(1);
   }
-  let count = 0;
+  this.countWeights = 0;
   for (let i = 1; i < arguments.length; i++){
     let tmp = [];
     for (let j = 0; j < arguments[i] - 1; j++){
       tmp.push([]);
       for (let k = 0; k < arguments[i - 1]; k++){
-        //tmp[j].push(count);
-        tmp[j].push(Math.random() * 2 - 1);
-        count++;
+        tmp[j].push(this.countWeights);
+        //tmp[j].push(Math.random() * 2 - 1);
+        this.countWeights++;
       }
     }
     let str = '';
@@ -54,7 +75,38 @@ function NeuralNetwork(){
   console.log(this.weights);
   console.log('outputs:');
   console.log(this.outputs);
-  console.log('count:' + count);
+  console.log('count:' + this.countWeights);
+
+  this.setWeights = function(weights){
+    if (weights.length != this.countWeights)
+      console.log('ERROR ### Bot.setWeights, incorrect amount of weights');
+    console.log('NN.setWeights:');
+    let ind = 0;
+    for (let i = 0; i < this.weights.length; i++)
+      for (let j = 0; j < this.weights[i].length; j++)
+        for (let k = 0; k < this.weights[i][j].length; k++)
+          this.weights[i][j][k] = weights[ind++];
+  }
+
+  this.showWeights = function(){
+    let str = '';
+    for (let i = 0; i < this.weights.length; i++){
+      str += '{';
+      for (let j = 0; j < this.weights[i].length; j++){
+        str += '[';
+        for (let k = 0; k < this.weights[i][j].length; k++){
+          str += Number(this.weights[i][j][k]).toFixed(3) + ',';
+        }
+        str += '],';
+      }
+      str += '}';
+    }
+    console.log('weights:' + str);
+  }
+
+  this.getAmountOfWeights = function(){
+    return this.countWeights;
+  }
 
   this.forwardPropagation = function(inputs){
     for (let i = 0; i < inputs.length; i++)

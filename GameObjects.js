@@ -52,12 +52,12 @@ function Birb(height){
 }
 
 function Columns(width, height){
-  this.hole = 100;
+  this.hole = 200;
   this.width = width;
   this.height = height;
   this.w = 30;
-  //this.h = [];//Math.random() * (height * 0.9 - this.hole) + height * 0.05;
-  //this.x = [];
+  this.score = 0;
+  this.highScore = 0;
   this.cols = [];
 
   this.isColliding1 = function(birb, x, y, w, h){
@@ -91,10 +91,14 @@ function Columns(width, height){
   }
 
   this.update = function(gameSpeed){
-    if (this.cols.length > 0 && this.cols[0].x < this.cols[0].w - this.hole * 2)
-      this.cols.splice(0, 1);
     if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
+    if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
+      this.cols.splice(0, 1);
+      this.score++;
+      if (this.highScore < this.score)
+        this.highScore = this.score;
+    }
     for (var i = 0; i < this.cols.length; i++){
       this.cols[i].x -= gameSpeed;
     }
@@ -106,5 +110,17 @@ function Columns(width, height){
       g.rect(this.cols[i].x, this.cols[i].h + this.hole, this.w, this.height - this.cols[i].h - this.hole);
     }
     g.stroke();
+  }
+
+  this.getScore = function(){
+    return this.score;
+  }
+
+  this.getHighScore = function(){
+    return this.highScore;
+  }
+
+  this.resetScore = function(){
+    this.score = 0;
   }
 }

@@ -5,15 +5,14 @@ canvas.height = height;
 var g = canvas.getContext('2d');
 
 var birb, cols, bot, birbs, bots;
-var gameSpeed = 3, timestep = 50, isRunning = true;
-var UPDATES_PER_FRAME = 5;
+var gameSpeed = 1, timestep = 50, isRunning = true;
+var UPDATES_PER_FRAME = 4;
+resetGameSpeed();
 startGame();
 var intervalId;
 
 function startGame(){
-  birb = new Birb(height);
   cols = new Columns(width, height);
-  bot = new Bot(birb, cols);
   birbs = [];
   bots = [];
   for (let i = 0; i < 1; i++){
@@ -25,15 +24,16 @@ function startGame(){
 
 function updateGame(){
   for (let i = 0; i < UPDATES_PER_FRAME; i++){
-    bot.update(gameSpeed);
-    birb.update(gameSpeed);
     for (let i = 0; i < birbs.length; i++){
-      bots[i].update(gameSpeed);
+      bots[i].update(gameSpeed, cols.getScore());
       birbs[i].update(gameSpeed);
+      if (this.cols.isColliding(birbs[i])){
+        bots[i].onCollision();
+        resetGameSpeed();
+        cols.resetScore();
+      }
     }
     cols.update(gameSpeed);
-    if (cols.isColliding(birb))
-      birb.onCollision();
     gameSpeed += 0.001;
   }
   drawGame();
@@ -41,11 +41,16 @@ function updateGame(){
 
 function drawGame(){
   g.clearRect(0, 0, width, height);
-  birb.draw(g);
   for (let i = 0; i < birbs.length; i++){
     birbs[i].draw(g);
   }
+  g.font = "30px Arial";
+  g.fillText("Score: " + this.cols.getScore(),10,50);
   cols.draw(g);
+}
+
+function resetGameSpeed(){
+  gameSpeed = 3;
 }
 
 window.onkeypress = function(evt){
@@ -60,5 +65,5 @@ window.onkeypress = function(evt){
     isRunning = !isRunning;
   }
   else
-    birb.jump();
+    birbs[0].jump();
 }
