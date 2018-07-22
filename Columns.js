@@ -28,13 +28,22 @@ function Columns(width, height){
     return false;
   }
 
-  this.update = function(){
+  this.nearestColumn = function(birb){
+    for (var i = 0; i < this.cols.length; i++){
+      if (this.cols[i].x > birb.x){
+        return [this.cols[i].x - birb.x, this.cols[i].h - birb.y]
+      }
+    }
+    return [0, 0];
+  }
+
+  this.update = function(gameSpeed){
     if (this.cols.length > 0 && this.cols[0].x < this.cols[0].w - this.hole * 2)
       this.cols.splice(0, 1);
-    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 200)
+    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
     for (var i = 0; i < this.cols.length; i++){
-      this.cols[i].x -= 3;
+      this.cols[i].x -= gameSpeed;
     }
   }
 
