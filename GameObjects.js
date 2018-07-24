@@ -1,9 +1,12 @@
-function Birb(height){
+function Birb(height, cols, bot){
+  this.cols = cols;
+  this.bot = bot;
   this.height = height;
-  this.x = 150;
+  this.x = 100;
   this.y = height / 2;
   this.vel = 0;
   this.r = 15;
+  this.distance = 0;
 
   let n = 5;
   this.tail = [];
@@ -17,8 +20,17 @@ function Birb(height){
   this.onCollision = function(){
   }
 
+  this.getDistance = function(){
+    return this.distance;
+  }
+
+  this.resetDistance = function(){
+    this.distance = 0;
+  }
+
   let frame = 0, skipFrames = 3;
   this.update = function(gameSpeed){
+    this.distance += gameSpeed;
     frame++;
     this.vel += 0.5;
     this.y += this.vel;

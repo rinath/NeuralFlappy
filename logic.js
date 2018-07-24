@@ -1,12 +1,13 @@
 var canvas = document.getElementById('mycanvas');
-var width = 1300, height = 300;
+var width = 600, height = 250;
 canvas.width = width;
 canvas.height = height;
 var g = canvas.getContext('2d');
+var rewind = false;
 
 var birb, cols, bot, birbs, bots;
 var gameSpeed = 1, timestep = 50, isRunning = true;
-var UPDATES_PER_FRAME = 4;
+var UPDATES_PER_FRAME = 4, UPDATES_PER_FRAME_REWIND = 2000;
 resetGameSpeed();
 startGame();
 var intervalId;
@@ -16,16 +17,19 @@ function startGame(){
   birbs = [];
   bots = [];
   for (let i = 0; i < 1; i++){
-    birbs.push(new Birb(height));
+    birbs.push(new Birb(height, cols));
     bots.push(new Bot(birbs[i], cols));
   }
   intervalId = setInterval(updateGame, timestep);
 }
 
 function updateGame(){
-  for (let i = 0; i < UPDATES_PER_FRAME; i++){
+  let updates = UPDATES_PER_FRAME;
+  if (rewind)
+    updates = UPDATES_PER_FRAME_REWIND;
+  for (let i = 0; i < updates; i++){
     for (let i = 0; i < birbs.length; i++){
-      bots[i].update(gameSpeed, cols.getScore());
+      bots[i].update(gameSpeed);
       birbs[i].update(gameSpeed);
       if (this.cols.isColliding(birbs[i])){
         bots[i].onCollision();
@@ -39,13 +43,20 @@ function updateGame(){
   drawGame();
 }
 
+let highScore = 0;
 function drawGame(){
   g.clearRect(0, 0, width, height);
   for (let i = 0; i < birbs.length; i++){
     birbs[i].draw(g);
   }
-  g.font = "30px Arial";
-  g.fillText("Score: " + this.cols.getScore(),10,50);
+  g.font = "15px Arial";
+  if (highScore < this.cols.getScore())
+    highScore = this.cols.getScore();
+  g.fillText("Score: " + this.cols.getScore(), 10, 15);
+  g.fillText("HighScore: " + highScore, 10, 30);
+  g.fillText("Epoch: " + this.bots[0].getEpoch(), 10, 45);
+  g.fillText("Teperature: " + Number(this.bots[0].getTemperature()).toFixed(2), 10, 60);
+  g.fillText("Distance: " + Number(this.birbs[0].getDistance()).toFixed(2), 10, 75);
   cols.draw(g);
 }
 
@@ -64,6 +75,8 @@ window.onkeypress = function(evt){
       intervalId = setInterval(updateGame, timestep);
     isRunning = !isRunning;
   }
+  else if (charStr == 'r')
+    rewind = !rewind;
   else
     birbs[0].jump();
 }

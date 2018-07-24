@@ -1,43 +1,65 @@
 function Bot(birb, cols){
   this.birb = birb;
   this.cols = cols;
+  this.epoch = 0;
+  this.temperature = 100;
   this.nn = new NeuralNetwork(5, 3, 2);
   this.data = new Array(this.nn.getAmountOfWeights());
   this.bestData = new Array(this.nn.getAmountOfWeights());
   for (let i = 0; i < this.data.length; i++){
-    this.data[i] = Math.random() * 20 - 10;
+    this.data[i] = Math.random() * 2 - 1;
     this.bestData[i] = this.data[i];
   }
   this.nn.setWeights(this.data);
   this.collisionFrame = -1;
 
-  this.update = function(gameSpeed, score){
+  this.getEpoch = function(){
+    return this.epoch;
+  }
+
+  this.getTemperature = function(){
+    return this.temperature;
+  }
+
+  this.update = function(gameSpeed){
     let nearestColumn = this.cols.nearestColumn(this.birb);
     let data = nearestColumn.concat([this.birb.vel, gameSpeed]);
     let output = this.nn.forwardPropagation(data);
     if (output[0] > 0)
       this.birb.jump();
-    if (this.collisionFrame >= 0)
+    if (this.collisionFrame >= 0){
       this.collisionFrame--;
-    if (this.collisionFrame == 0){
-      this.newEpoch(score);
+      if (this.collisionFrame == 0){
+        this.newEpoch(this.birb.getDistance());
+      }
     }
   }
 
   this.onCollision = function(){
     this.collisionFrame = 2;
-    console.log('Bot.onCollision');
   }
 
   let prevScore = 0;
   this.newEpoch = function(score){
-    // TODO: todododototdoooo
-    if (prevScore);
+    this.epoch++;
+    this.birb.resetDistance();
+    if (prevScore < score || Math.exp((score - prevScore) / this.temperature) > Math.random() ){
+      if (prevScore > score)
+        console.log('prevscore:' + prevScore + ' > score:' + score + ' temp:' + this.temperature +
+          ' probability:' + Math.exp((score - prevScore) / this.temperature));
+      for (let i = 0; i < this.data.length; i++)
+        this.bestData[i] = this.data[i];
+    }
+    let updateWeights = 0.1; // amount of updates weights in percentage
     for (let i = 0; i < this.data.length; i++){
-      this.data[i] += Math.random() * 2 - 1;
+      if (Math.random() < updateWeights)
+        this.data[i] = this.bestData[i] + this.temperature * (Math.random() * 2 - 1);
+      else
+        this.data[i] = this.bestData[i];
     }
     this.nn.setWeights(this.data);
-    this.nn.showWeights();
+    //this.nn.showWeights();
+    this.temperature *= 0.999;
     prevScore = score;
   }
 }
@@ -80,7 +102,7 @@ function NeuralNetwork(){
   this.setWeights = function(weights){
     if (weights.length != this.countWeights)
       console.log('ERROR ### Bot.setWeights, incorrect amount of weights');
-    console.log('NN.setWeights:');
+    //console.log('NN.setWeights:');
     let ind = 0;
     for (let i = 0; i < this.weights.length; i++)
       for (let j = 0; j < this.weights[i].length; j++)
@@ -95,9 +117,9 @@ function NeuralNetwork(){
       for (let j = 0; j < this.weights[i].length; j++){
         str += '[';
         for (let k = 0; k < this.weights[i][j].length; k++){
-          str += Number(this.weights[i][j][k]).toFixed(3) + ',';
+          str += Number(this.weights[i][j][k]).toFixed(3) + ', ';
         }
-        str += '],';
+        str += '], ';
       }
       str += '}';
     }
