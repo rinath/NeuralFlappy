@@ -1,47 +1,51 @@
-function Birb(height, cols, bot){
-  this.cols = cols;
-  this.bot = bot;
-  this.height = height;
-  this.x = 100;
-  this.y = height / 2;
-  this.vel = 0;
-  this.r = 15;
-  this.distance = 0;
+class Birb{
 
-  let n = 5;
-  this.tail = [];
-  for (var i = 0; i < n; i++)
-    this.tail.push([this.x, this.y]);
+  constructor(height, cols, bot){
+    this.cols = cols;
+    this.bot = bot;
+    this.height = height;
+    this.x = 100;
+    this.y = height / 2;
+    this.vel = 0;
+    this.r = 15;
+    this.distance = 0;
+    this.frame = 0;
+    this.skipFrames = 3;
 
-  this.jump = function(){
+    let n = 5;
+    this.tail = [];
+    for (var i = 0; i < n; i++)
+      this.tail.push([this.x, this.y]);
+  }
+
+  jump(){
     this.vel = -10;
   }
 
-  this.onCollision = function(){
+  onCollision(){
   }
 
-  this.getDistance = function(){
+  getDistance(){
     return this.distance;
   }
 
-  this.resetDistance = function(){
+  resetDistance(){
     this.distance = 0;
   }
 
-  let frame = 0, skipFrames = 3;
-  this.update = function(gameSpeed){
+  update(gameSpeed){
     this.distance += gameSpeed;
-    frame++;
+    this.frame++;
     this.vel += 0.5;
     this.y += this.vel;
     if (this.y < this.r)
       this.y = this.r;
     else if (this.y > this.height - this.r)
       this.y = this.height - this.r;
-    if (frame % skipFrames == 0){
-      frame = 0;
+    if (this.frame % this.skipFrames == 0){
+      this.frame = 0;
       for (var i = 0; i < this.tail.length - 1; i++){
-        this.tail[i][0] = this.tail[i + 1][0] - gameSpeed * skipFrames;
+        this.tail[i][0] = this.tail[i + 1][0] - gameSpeed * this.skipFrames;
         this.tail[i][1] = this.tail[i + 1][1];
       }
       this.tail[this.tail.length - 1][0] = this.x;
@@ -49,7 +53,7 @@ function Birb(height, cols, bot){
     }
   }
 
-  this.draw = function(g){
+  draw(g){
     g.beginPath();
     g.arc(this.x, this.y, this.r, 0, 7);
     g.stroke();
@@ -63,28 +67,31 @@ function Birb(height, cols, bot){
   }
 }
 
-function Columns(width, height){
-  this.hole = 200;
-  this.width = width;
-  this.height = height;
-  this.w = 30;
-  this.score = 0;
-  this.highScore = 0;
-  this.cols = [];
+class Columns {
 
-  this.isColliding1 = function(birb, x, y, w, h){
-    circleDistance_x = Math.abs(birb.x - x - w/2);
-    circleDistance_y = Math.abs(birb.y - y - h/2);
+  constructor(width, height){
+    this.hole = 200;
+    this.width = width;
+    this.height = height;
+    this.w = 30;
+    this.score = 0;
+    this.highScore = 0;
+    this.cols = [];
+  }
+
+  isColliding1(birb, x, y, w, h){
+    let circleDistance_x = Math.abs(birb.x - x - w/2);
+    let circleDistance_y = Math.abs(birb.y - y - h/2);
     if (circleDistance_x > (w/2 + birb.r)) { return false; }
     if (circleDistance_y > (h/2 + birb.r)) { return false; }
     if (circleDistance_x <= (w/2)) { return true; }
     if (circleDistance_y <= (h/2)) { return true; }
-    cornerDistance_sq = (circleDistance_x - w/2) * (circleDistance_x - w/2) +
+    let cornerDistance_sq = (circleDistance_x - w/2) * (circleDistance_x - w/2) +
                          (circleDistance_y - h/2) * (circleDistance_y - h/2);
     return (cornerDistance_sq <= (birb.r * birb.r));
   }
 
-  this.isColliding = function(birb){
+  isColliding(birb){
     for (var i = 0; i < this.cols.length; i++){
       if (this.isColliding1(birb, this.cols[i].x, 0, this.w, this.cols[i].h) ||
           this.isColliding1(birb, this.cols[i].x, this.cols[i].h + this.hole, this.w, this.height - this.cols[i].h - this.hole))
@@ -93,7 +100,7 @@ function Columns(width, height){
     return false;
   }
 
-  this.nearestColumn = function(birb){
+  nearestColumn(birb){
     for (var i = 0; i < this.cols.length; i++){
       if (this.cols[i].x > birb.x){
         return [this.cols[i].x - birb.x, this.cols[i].h - birb.y]
@@ -102,7 +109,7 @@ function Columns(width, height){
     return [0, 0];
   }
 
-  this.update = function(gameSpeed){
+  update(gameSpeed){
     if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
     if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
@@ -116,7 +123,7 @@ function Columns(width, height){
     }
   }
 
-  this.draw = function(g){
+  draw(g){
     for (var i = 0; i < this.cols.length; i++){
       g.rect(this.cols[i].x, 0, this.w, this.cols[i].h);
       g.rect(this.cols[i].x, this.cols[i].h + this.hole, this.w, this.height - this.cols[i].h - this.hole);
@@ -124,15 +131,15 @@ function Columns(width, height){
     g.stroke();
   }
 
-  this.getScore = function(){
+  getScore(){
     return this.score;
   }
 
-  this.getHighScore = function(){
+  getHighScore(){
     return this.highScore;
   }
 
-  this.resetScore = function(){
+  resetScore(){
     this.score = 0;
   }
 }
