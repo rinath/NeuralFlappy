@@ -66,7 +66,7 @@ class Birb{
     this.y += this.vel;
     if (this.y < this.r || this.y > this.height - this.r){
       this.y = this.height / 2; //prevy;
-      this.vel = 0; 
+      this.vel = 0;
       this.onWallCollision();
     }
     if (this.frame % this.skipFrames == 0){
@@ -102,12 +102,10 @@ class Birb{
 class Columns {
 
   constructor(width, height){
-    this.hole = 100;
+    this.hole = 200;
     this.width = width;
     this.height = height;
     this.w = 30;
-    this.score = 0;
-    this.highScore = 0;
     this.cols = [];
   }
 
@@ -147,9 +145,6 @@ class Columns {
     if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
       this.onColumnPassed();
       this.cols.splice(0, 1);
-      this.score++;
-      if (this.highScore < this.score)
-        this.highScore = this.score;
     }
     for (var i = 0; i < this.cols.length; i++){
       this.cols[i].x -= gameSpeed;
@@ -164,22 +159,10 @@ class Columns {
     g.stroke();
   }
 
-  getScore(){
-    return this.score;
-  }
-
-  getHighScore(){
-    return this.highScore;
-  }
-
   onColumnPassed(){
   }
 
   setOnColumnPassedHandler(func){
     this.onColumnPassed = func;
-  }
-
-  resetScore(){
-    this.score = 0;
   }
 }

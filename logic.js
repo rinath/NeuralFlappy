@@ -12,7 +12,7 @@ class World {
     canvas.height = this.height;
     this.g = canvas.getContext('2d');
     this.UPDATES_PER_FRAME_NORMAL = 4;
-    this.UPDATES_PER_FRAME_REWIND = 10000;
+    this.UPDATES_PER_FRAME_REWIND = 1000;
     this.updatesPerFrame = this.UPDATES_PER_FRAME_NORMAL;
     this.highScore = 0;
     this.score = 0;
@@ -75,7 +75,7 @@ class World {
       y += txtSize;
     }
     this.cols.draw(this.g);
-    this.bots[0].nn.draw(this.g, this.width - 600, 0, 600, this.height);
+    this.bots[0].nn.draw(this.g, this.width - 500, 0, 500, this.height);
   }
 
   resetGameSpeed(){
