@@ -1,16 +1,16 @@
 class Birb{
 
-  constructor(height, cols, bot){
+  constructor(height, cols){
     this.cols = cols;
-    this.bot = bot;
     this.height = height;
-    this.x = 100;
+    this.x = 200;
     this.y = height / 2;
     this.vel = 0;
     this.r = 15;
     this.distance = 0;
     this.frame = 0;
     this.skipFrames = 3;
+    this.columnCollisionFrame = -1;
 
     let n = 5;
     this.tail = [];
@@ -22,11 +22,36 @@ class Birb{
     this.vel = -10;
   }
 
-  onCollision(){
+  onWallCollision(){
+  }
+
+  onColumnCollision(){
+    this.columnCollisionFrame = 2;
+  }
+
+  onColumnLastCollision(){
+  }
+
+  setWallCollisionHandler(func){
+    console.log('Birb.setCollisionListener');
+    this.onWallCollision = func;
+  }
+
+  setColumnLastCollisionHandler(func){
+    console.log('Birb.setColumnLastCollisionHandler');
+    this.onColumnLastCollision = func;
   }
 
   getDistance(){
     return this.distance;
+  }
+
+  getNearestColumn(){
+    return this.cols.nearestColumn(this);
+  }
+
+  getY(){
+    return this.y;
   }
 
   resetDistance(){
@@ -37,11 +62,13 @@ class Birb{
     this.distance += gameSpeed;
     this.frame++;
     this.vel += 0.5;
+    let prevy = this.y;
     this.y += this.vel;
-    if (this.y < this.r)
-      this.y = this.r;
-    else if (this.y > this.height - this.r)
-      this.y = this.height - this.r;
+    if (this.y < this.r || this.y > this.height - this.r){
+      this.y = this.height / 2; //prevy;
+      this.vel = 0; 
+      this.onWallCollision();
+    }
     if (this.frame % this.skipFrames == 0){
       this.frame = 0;
       for (var i = 0; i < this.tail.length - 1; i++){
@@ -51,6 +78,11 @@ class Birb{
       this.tail[this.tail.length - 1][0] = this.x;
       this.tail[this.tail.length - 1][1] = this.y;
     }
+    if (this.cols.isColliding(this))
+      this.onColumnCollision();
+    this.columnCollisionFrame--;
+    if (this.columnCollisionFrame == -1)
+      this.onColumnLastCollision();
   }
 
   draw(g){
@@ -70,7 +102,7 @@ class Birb{
 class Columns {
 
   constructor(width, height){
-    this.hole = 200;
+    this.hole = 100;
     this.width = width;
     this.height = height;
     this.w = 30;
@@ -113,6 +145,7 @@ class Columns {
     if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
     if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
+      this.onColumnPassed();
       this.cols.splice(0, 1);
       this.score++;
       if (this.highScore < this.score)
@@ -137,6 +170,13 @@ class Columns {
 
   getHighScore(){
     return this.highScore;
+  }
+
+  onColumnPassed(){
+  }
+
+  setOnColumnPassedHandler(func){
+    this.onColumnPassed = func;
   }
 
   resetScore(){
