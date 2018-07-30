@@ -1,3 +1,6 @@
+function tostr(number){
+  return Number(number).toFixed(6);
+}
 class SimulatedAnnealing {
   constructor(n, initialTemperature, temperatureFactor, maximizeFitness){ // n - amount of data points
     if (maximizeFitness)
@@ -10,7 +13,7 @@ class SimulatedAnnealing {
       this.prevData.push(Math.random() * 20 - 10);
       this.data.push(this.prevData[i]);
     }
-    this.fitness = 1000;
+    this.fitness = 100000;
     if (maximizeFitness)
       this.fitness = 0;
     this.previousFitness = this.fitness;
@@ -34,22 +37,165 @@ class SimulatedAnnealing {
       + ', f:' + this.fitness + ', pf:' + this.previousFitness + ', t:' + this.temperature
       + ', (f-pf)*mf:' + this.maximizeFitness * (this.fitness - this.previousFitness) + ', (f-pf)*mf/t/10 :'
       + this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature);
-    if ((this.previousFitness - this.fitness) * this.maximizeFitness < 0
-      || Math.exp(this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature) > Math.random() ){
+    if ((this.previousFitness - this.fitness) * this.maximizeFitness <= 0
+      || Math.exp(this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature / 100) > Math.random() ){
       for (let i = 0; i < this.data.length; i++)
         this.prevData[i] = this.data[i];
         this.previousFitness = this.fitness;
+        this.temperature *= this.temperatureFactor;
     }
     else {
       console.log('data point is not accepted');
     }
-    this.temperature *= this.temperatureFactor;
   }
   getFitness(){
     return this.fitness;
   }
   getTemperature(){
     return this.temperature;
+  }
+}
+
+// Real Coded Genetic Algorithm
+class RCGA {
+  constructor(population, maximizeFitness = true){
+    this.population = population;
+    if (maximizeFitness)
+      this.maximizeFitness = 1;
+    else
+      this.maximizeFitness = -1;
+    this.data = [[], []];
+    this.fitness = [];
+    this.parents = [];
+    for (let i = 0; i < population; i++){
+      this.data[0].push([]);
+      this.data[1].push([]);
+      this.fitness.push(100000);
+      this.parents.push([0, 0]);
+      if (maximizeFitness)
+        this.fitness[i] = 0;
+    }
+    this.featureLowerBound = [];
+    this.featureUpperBound = [];
+    this.epoch = 0;
+    this.features = 0;
+    this.active = 0; // active generation, in double buffer, either 0 or 1
+    this.mutationRate = 0.2;
+  }
+  createFeature(lowerBound, upperBound, amount = 1){
+    this.features += amount;
+    if (lowerBound > upperBound)
+      [lowerBound, upperBound] = [upperBound, lowerBound];
+    for (let i = 0; i < amount; i++){
+      this.featureLowerBound.push(lowerBound);
+      this.featureUpperBound.push(upperBound);
+      for (let j = 0; j < this.population; j++){
+        let val = Math.random() * (upperBound - lowerBound) + lowerBound;
+        this.data[0][j].push(val);
+        this.data[1][j].push(val);
+      }
+    }
+  }
+  getCreature(i){
+    return this.data[this.active][i];
+  }
+  getPopulation(){
+    return this.population;
+  }
+  getFittest(){
+    let index = 0;
+    for (let i = 0; i < this.fitness.length; i++){
+      if (this.fitness[index] < this.fitness[i])
+        index = i;
+    }
+    return this.data[this.active][index];
+  }
+  setFitness(i, value){
+    this.fitness[i] = value;
+  }
+  newEpoch(){
+    this.epoch++;
+    this.tournamentSelection(2);
+    for (let i = 0; i < this.parents.length; i++){
+      this.simpleCrossover(this.data[this.active][this.parents[i][0]], this.data[this.active][this.parents[i][1]],
+        this.data[1 - this.active][i]);
+    }
+    for (let i = 0; i < this.population; i++)
+      if (this.mutationRate > Math.random())
+        this.mutate(this.data[1 - this.active][i]);
+    this.active = 1 - this.active;
+  }
+  simpleCrossover(mother, father, child){
+    let index = Math.floor(Math.random() * this.features);
+    for (let i = 0; i < index; i++)
+      child[i] = mother[i];
+    for (let i = index; i < this.features; i++)
+      child[i] = father[i];
+  }
+  blxCrossover(mother, father, child){
+    let crossoverRange = 1.5;
+    for (let i = 0; i < this.features; i++){
+      let higher = father[i];
+      let lower = mother[i];
+      if (father[i] < mother[i]){
+        higher = mother[i];
+        lower = father[i];
+      }
+      child[i] = lower - (higher - lower) * crossoverRange + Math.random() * (higher - lower) * (1 + 2 * crossoverRange);
+    }
+  }
+  mutate(creature){
+    let eta = 20;
+    let probability = 1 / this.features;
+    for (let i = 0; i < this.features; i++){
+      if (probability > Math.random()){
+        let u = Math.random();
+        if (u > 0.5){
+          let delta = 1 - Math.pow(2 * (1 - u), 1 / (1 + eta));
+          creature[i] += delta * (this.featureUpperBound[i] - creature[i]);
+        }
+        else {
+          let delta = Math.pow(2 * u, 1 / (1 + eta)) - 1;
+          creature[i] += delta * (creature[i] - this.featureLowerBound[i]);
+        }
+      }
+    }
+  }
+  tournamentSelection(k = 3){
+    let candidates = new Array(k);
+    for (let i = 0; i < 2 * this.parents.length; i++){
+      let parent = 0;
+      for (let j = 0; j < k; j++){
+        candidates[j] = Math.floor(Math.random() * this.population);
+        if (j == 0)
+          parent = candidates[j];
+        else if (this.fitness[parent] < this.fitness[candidates[j]])
+          parent = candidates[j];
+      }
+      this.parents[Math.floor(i / 2)][i % 2] = parent;
+    }
+  }
+  showData(){
+    let count = new Array(this.population);
+    for (let i = 0; i < this.population; i++)
+      count[i] = 0;
+    for (let i = 0; i < this.population; i++){
+      count[this.parents[i][0]]++;
+      count[this.parents[i][1]]++;
+    }
+    for (let i = 0; i < this.data[this.active].length; i++){
+      let str = this.active + ', ' + i + ' -- fit:' + tostr(this.fitness[i]) + ', count:' + count[i]
+        + ', mother:' + this.parents[i][0]
+        + ', father:' + this.parents[i][1] + ' \t\t* ';
+      for (let j = 0; j < this.data[0][i].length; j++){
+        str += tostr(this.data[0][i][j]) + ', ';
+      }
+      str += ' => ';
+      for (let j = 0; j < this.data[1][i].length; j++){
+        str += tostr(this.data[1][i][j]) + ', ';
+      }
+      console.log(str);
+    }
   }
 }
 

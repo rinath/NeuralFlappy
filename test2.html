@@ -1,0 +1,89 @@
+<html>
+<head><title>tits</title></head>
+<body>
+  <canvas id='myCanvas' style='border:1px solid'>bruh, your browser is shit. poor fucker</canvas>
+  <script src='AI.js'></script>
+  <script>
+    /*function tostr(number){
+      return Number(number).toFixed(4);
+    }*/
+    function rastrigins(x, y){
+      x -= 3;
+      y += 1.5;
+      return 20 + x*x + y*y - 10 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y));
+    }
+    function paraboloid(x, y){
+      x -= 3;
+      y += 1.5;
+      return x * x + y * y;
+    }
+    function hyperparaboloid(values){
+      let arr = [-2, 1, 3, -4, 2.5, 1.88, -8.3, 4, 66];
+      let sum = 0;
+      for (let i = 0; i < values.length; i++){
+        sum += Math.pow((values[i] - arr[i]), 2);
+      }
+      return sum;
+    }
+    let imgWidth = 400;
+    let canvas = document.getElementById('myCanvas');
+    canvas.width = imgWidth;
+    canvas.height = imgWidth;
+    canvas.style.width = imgWidth;
+    canvas.style.height = imgWidth;
+    let g = canvas.getContext('2d');
+    let n = 60;
+    for (let i = 0; i < n; i++){
+      for (let j = 0; j < n; j++){
+        let value = rastrigins(-10 + 20 * i / (n - 1), -10 + 20 * j / (n - 1));
+        let compress = 1 / (1 + Math.exp(-value / 100));
+        g.fillStyle = 'rgb(' + compress * 255 + ',0,' + (1 - compress) * 255;
+        g.fillRect(i * imgWidth / (n - 1), j * imgWidth / (n - 1), imgWidth / (n - 3), imgWidth / (n - 3));
+      }
+    }
+    /*let ga = new RCGA(10);
+    ga.createFeature(-10, 10, 2);
+    for (let j = 0; j < 300; j++){
+      console.log('EPOCH: ' + j);
+      for (let i = 0; i < ga.getPopulation(); i++){
+        let data = ga.getCreature(i);
+        //ga.setFitness(i, -rastrigins(data[0], data[1]));
+        ga.setFitness(i, -hyperparaboloid(data));
+      }
+      ga.showData();
+      ga.newEpoch();
+    }*/
+    let points = [];
+    //let anneal = new SimulatedAnnealing(2, 5, 0.99, false);
+    let ga = new RCGA(10);
+    ga.createFeature(-10, 10, 2);
+    n = 30;
+    g.beginPath();
+    for (let i = 0; i < n; i++){
+      let point = ga.getFittest();
+      points.push([point[0], point[1]]);
+      let color = i / (n - 1) * 255;
+      g.strokeStyle = 'green';
+      g.lineTo((point[0] + 10) * imgWidth / 20, (point[1] + 10) * imgWidth / 20);
+      for (let i = 0; i < ga.getPopulation(); i++){
+        let data = ga.getCreature(i);
+        let fitness = -rastrigins(data[0], data[1]);
+        console.log('fitness:' + fitness);
+        ga.setFitness(i, fitness);
+      }
+      ga.newEpoch();
+    }
+    g.stroke();
+    for (let i = 0; i < n; i++){
+      let color = i / (n - 1) * 255;
+      g.fillStyle = 'rgb(' + color + ',' + color + ',' + color + ')';
+      let r = 2;
+      if (i > n - 5)
+        r += (i - n + 5);
+      g.beginPath();
+      g.arc((points[i][0] + 10) * imgWidth / 20, (points[i][1] + 10) * imgWidth / 20, r, 0, 7);
+      g.fill();
+    }
+  </script>
+</body>
+</html>

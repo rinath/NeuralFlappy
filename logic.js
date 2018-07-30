@@ -46,7 +46,7 @@ class World {
         this.birbs[i].update(this.gameSpeed);
       }
       this.cols.update(this.gameSpeed);
-      this.gameSpeed += 0.001;
+      this.gameSpeed += 0.0001;
     }
   }
 

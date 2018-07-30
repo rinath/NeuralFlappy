@@ -61,7 +61,7 @@ class Birb{
   update(gameSpeed){
     this.distance += gameSpeed;
     this.frame++;
-    this.vel += 0.5;
+    this.vel += 0.7;
     let prevy = this.y;
     this.y += this.vel;
     if (this.y < this.r || this.y > this.height - this.r){
@@ -102,7 +102,7 @@ class Birb{
 class Columns {
 
   constructor(width, height){
-    this.hole = 200;
+    this.hole = 150;
     this.width = width;
     this.height = height;
     this.w = 30;
@@ -140,7 +140,7 @@ class Columns {
   }
 
   update(gameSpeed){
-    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
+    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 600)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
     if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
       this.onColumnPassed();
