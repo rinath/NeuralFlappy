@@ -1,9 +1,9 @@
-class Birb{
+class Birb {
 
   constructor(height, cols){
     this.cols = cols;
     this.height = height;
-    this.x = 200;
+    this.x = 150;// + Math.random() * 150;
     this.y = height / 2;
     this.vel = 0;
     this.r = 15;
@@ -11,15 +11,14 @@ class Birb{
     this.frame = 0;
     this.skipFrames = 3;
     this.columnCollisionFrame = -1;
-
-    let n = 5;
+    let n = 20;
     this.tail = [];
     for (var i = 0; i < n; i++)
       this.tail.push([this.x, this.y]);
   }
 
   jump(){
-    this.vel = -10;
+    this.vel = -3.5;
   }
 
   onWallCollision(){
@@ -33,13 +32,15 @@ class Birb{
   }
 
   setWallCollisionHandler(func){
-    console.log('Birb.setCollisionListener');
     this.onWallCollision = func;
   }
 
   setColumnLastCollisionHandler(func){
-    console.log('Birb.setColumnLastCollisionHandler');
     this.onColumnLastCollision = func;
+  }
+
+  setColumnCollisionHandler(func){
+    this.onColumnCollision = func;
   }
 
   getDistance(){
@@ -61,11 +62,11 @@ class Birb{
   update(gameSpeed){
     this.distance += gameSpeed;
     this.frame++;
-    this.vel += 0.7;
+    this.vel += 0.1;
     let prevy = this.y;
     this.y += this.vel;
     if (this.y < this.r || this.y > this.height - this.r){
-      this.y = this.height / 2; //prevy;
+      this.y = this.height / 2;
       this.vel = 0;
       this.onWallCollision();
     }
@@ -85,7 +86,8 @@ class Birb{
       this.onColumnLastCollision();
   }
 
-  draw(g){
+  draw(g, color){
+    g.strokeStyle = color;
     g.beginPath();
     g.arc(this.x, this.y, this.r, 0, 7);
     g.stroke();
@@ -133,10 +135,14 @@ class Columns {
   nearestColumn(birb){
     for (var i = 0; i < this.cols.length; i++){
       if (this.cols[i].x > birb.x){
-        return [this.cols[i].x - birb.x, this.cols[i].h - birb.y]
+        return [this.cols[i].x + this.w - birb.x, this.cols[i].h - birb.getY() + this.hole / 2];
       }
     }
     return [0, 0];
+  }
+
+  reset(){
+    this.cols = [];
   }
 
   update(gameSpeed){
@@ -152,6 +158,8 @@ class Columns {
   }
 
   draw(g){
+    g.strokeStyle = 'black';
+    g.beginPath();
     for (var i = 0; i < this.cols.length; i++){
       g.rect(this.cols[i].x, 0, this.w, this.cols[i].h);
       g.rect(this.cols[i].x, this.cols[i].h + this.hole, this.w, this.height - this.cols[i].h - this.hole);

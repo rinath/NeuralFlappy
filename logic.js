@@ -3,7 +3,6 @@ function tostr(number){
 }
 
 class World {
-
   constructor(){
     let canvas = document.getElementById('mycanvas');
     this.width = 1300;
@@ -22,52 +21,60 @@ class World {
     this.jumped = false;
     this.initializeGame();
   }
-
   initializeGame(){
+    this.epoch = 0;
     this.cols = new Columns(this.width, this.height);
     this.cols.setOnColumnPassedHandler(this.onColumnPassed.bind(this));
-    this.birbs = [];
-    this.bots = [];
-    for (let i = 0; i < 1; i++){
-      this.birbs.push(new Birb(this.height, this.cols));
-      this.bots.push(new Bot(this, this.birbs[i], this.cols));
-    }
-    this.resetGameSpeed();
+    this.bots = [new BotGA(this, this.cols), new BotSA(this, this.cols)];
+    //this.bots = [new BotSA(this, this.cols)];
+    this.resetGame();
   }
-
-  resetScore(){
-    this.score = 0;
+  getHeight(){
+    return this.height;
   }
-
   update(){
     for (let i = 0; i < this.updatesPerFrame; i++){
-      for (let i = 0; i < this.birbs.length; i++){
-        this.jumped = this.bots[i].update(this.gameSpeed);
-        this.birbs[i].update(this.gameSpeed);
+      let alive = 0;
+      for (let bot of this.bots)
+        if (bot.isAlive())
+          alive++;
+      if (alive == 0){
+        this.resetGame();
+        for (let bot of this.bots){
+          bot.reset();
+        }
+        this.epoch++;
+      }
+      for (let bot of this.bots){
+        bot.update(this.gameSpeed);
       }
       this.cols.update(this.gameSpeed);
       this.gameSpeed += 0.0001;
     }
   }
-
   draw(){
     this.g.strokeStyle = 'black';
     this.g.lineWidth = 1;
     this.g.clearRect(0, 0, this.width, this.height);
-    for (let i = 0; i < this.birbs.length; i++){
-      this.birbs[i].draw(this.g);
+    let once = true;
+    for (let bot of this.bots){
+      bot.draw(this.g);
+      if (bot.isAlive() && once){
+        bot.getNeuralNet().draw(this.g, 1000, 0, 300, 180);
+        once = false;
+      }
     }
     let txtSize = 15;
     this.g.font = txtSize + 'px Arial';
     let str = [
       'Score: ' + this.score, //this.cols.getScore(),
       'HighScore: ' + this.highScore,
-      'Epoch: ' + this.bots[0].getEpoch(),
-      'Teperature: ' + tostr(this.bots[0].getTemperature()),
+      'Epoch: ' + this.epoch,
+      /*'Teperature: ' + tostr(this.bots[0].getTemperature()),
       'Distance: ' + tostr(this.birbs[0].getDistance()),
       'Update: ' + tostr(this.measuredUpdateTime),
       'Draw: ' + tostr(this.measuredDrawTime),
-      'Jumped: ' + this.jumped
+      'Jumped: ' + this.jumped*/
     ];
     let y = txtSize;
     for (let i = 0; i < str.length; i++){
@@ -75,13 +82,12 @@ class World {
       y += txtSize;
     }
     this.cols.draw(this.g);
-    this.bots[0].nn.draw(this.g, this.width - 500, 0, 500, this.height);
   }
-
-  resetGameSpeed(){
+  resetGame(){
     this.gameSpeed = 3;
+    this.score = 0;
+    this.cols.reset();
   }
-
   onButtonPressed(btn){
     switch (btn){
       case 'r':
@@ -91,11 +97,11 @@ class World {
         else
           this.updatesPerFrame = this.UPDATES_PER_FRAME_NORMAL;
         break;
-      default:
-        this.birbs[0].jump();
+      case 'e':
+        this.basicBot.reset();
+        break;
     }
   }
-
   onColumnPassed(){
     this.score++;
     if (this.score > this.highScore)

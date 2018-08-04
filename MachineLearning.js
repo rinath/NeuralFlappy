@@ -38,7 +38,7 @@ class SimulatedAnnealing {
       + ', (f-pf)*mf:' + this.maximizeFitness * (this.fitness - this.previousFitness) + ', (f-pf)*mf/t/10 :'
       + this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature);
     if ((this.previousFitness - this.fitness) * this.maximizeFitness <= 0
-      || Math.exp(this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature / 100) > Math.random() ){
+      || Math.exp(this.maximizeFitness * (this.fitness - this.previousFitness) / this.temperature) > Math.random() ){
       for (let i = 0; i < this.data.length; i++)
         this.prevData[i] = this.data[i];
         this.previousFitness = this.fitness;
@@ -58,31 +58,28 @@ class SimulatedAnnealing {
 
 // Real Coded Genetic Algorithm
 class RCGA {
-  constructor(population, maximizeFitness = true){
-    this.population = population;
+  constructor(population, mutationRate, maximizeFitness = true){
     if (maximizeFitness)
       this.maximizeFitness = 1;
     else
       this.maximizeFitness = -1;
     this.data = [[], []];
     this.fitness = [];
+    this.maxFitness = 100000;
+    if (maximizeFitness)
+      this.maxFitness = 0;
+    this.fittest = [];
     this.parents = [];
-    for (let i = 0; i < population; i++){
-      this.data[0].push([]);
-      this.data[1].push([]);
-      this.fitness.push(100000);
-      this.parents.push([0, 0]);
-      if (maximizeFitness)
-        this.fitness[i] = 0;
-    }
+    this.population = 0;
+    this.addCreature(population, maximizeFitness);
     this.featureLowerBound = [];
     this.featureUpperBound = [];
     this.epoch = 0;
     this.features = 0;
     this.active = 0; // active generation, in double buffer, either 0 or 1
-    this.mutationRate = 0.2;
+    this.mutationRate = mutationRate;
   }
-  createFeature(lowerBound, upperBound, amount = 1){
+  addFeature(lowerBound, upperBound, amount = 1){
     this.features += amount;
     if (lowerBound > upperBound)
       [lowerBound, upperBound] = [upperBound, lowerBound];
@@ -94,7 +91,19 @@ class RCGA {
         this.data[0][j].push(val);
         this.data[1][j].push(val);
       }
+      this.fittest.push(Math.random() * (upperBound - lowerBound) + lowerBound);
     }
+  }
+  addCreature(amount, maximizeFitness){
+    for (let i = 0; i < amount; i++){
+      this.data[0].push([]);
+      this.data[1].push([]);
+      this.fitness.push(100000);
+      this.parents.push([0, 0]);
+      if (maximizeFitness)
+        this.fitness[i] = 0;
+    }
+    this.population += amount;
   }
   getCreature(i){
     return this.data[this.active][i];
@@ -110,17 +119,36 @@ class RCGA {
     }
     return this.data[this.active][index];
   }
+  getFittestIndex(){
+    let index = 0;
+    for (let i = 0; i < this.fitness.length; i++){
+      if (this.fitness[index] < this.fitness[i])
+        index = i;
+    }
+    return index;
+  }
+  getFittestFitness(){
+    return this.fitness[this.getFittestIndex()];
+  }
   setFitness(i, value){
     this.fitness[i] = value;
   }
   newEpoch(){
     this.epoch++;
-    this.tournamentSelection(2);
-    for (let i = 0; i < this.parents.length; i++){
-      this.simpleCrossover(this.data[this.active][this.parents[i][0]], this.data[this.active][this.parents[i][1]],
+    this.tournamentSelection();
+    let fittestIndex = this.getFittestIndex();
+    if (this.maxFitness < this.fitness[fittestIndex]){
+      this.maxFitness = this.fitness[fittestIndex];
+      for (let i = 0; i < this.features; i++)
+        this.fittest[i] = this.data[this.active][fittestIndex][i];
+    }
+    for (let i = 0; i < this.features; i++)
+      this.data[1 - this.active][0][i] = this.fittest[i];
+    for (let i = 1; i < this.parents.length; i++){
+      this.nPointCrossover(this.data[this.active][this.parents[i][0]], this.data[this.active][this.parents[i][1]],
         this.data[1 - this.active][i]);
     }
-    for (let i = 0; i < this.population; i++)
+    for (let i = 1; i < this.population; i++)
       if (this.mutationRate > Math.random())
         this.mutate(this.data[1 - this.active][i]);
     this.active = 1 - this.active;
@@ -132,8 +160,16 @@ class RCGA {
     for (let i = index; i < this.features; i++)
       child[i] = father[i];
   }
+  nPointCrossover(mother, father, child){
+    for (let i = 0; i < this.features; i++){
+      if (i % 2 == 0)
+        child[i] = mother[i];
+      else
+        child[i] = father[i];
+    }
+  }
   blxCrossover(mother, father, child){
-    let crossoverRange = 1.5;
+    let crossoverRange = 0.5;
     for (let i = 0; i < this.features; i++){
       let higher = father[i];
       let lower = mother[i];
@@ -146,7 +182,7 @@ class RCGA {
   }
   mutate(creature){
     let eta = 20;
-    let probability = 1 / this.features;
+    let probability = 5 / this.features;
     for (let i = 0; i < this.features; i++){
       if (probability > Math.random()){
         let u = Math.random();
@@ -199,7 +235,7 @@ class RCGA {
   }
 }
 
-class NeuralNetwork{
+class NeuralNetwork {
   constructor(){
     this.weights = [];
     this.outputs = [];
@@ -209,7 +245,6 @@ class NeuralNetwork{
       arguments[i]++;
       str += arguments[i] + ', ';
     }
-    console.log('arguments: ' + str);
     for (let i = 0; i < arguments.length; i++){
       this.outputs.push([]);
       this.inputs.push([]);
@@ -232,16 +267,16 @@ class NeuralNetwork{
       let str = '';
       for (let i = 0; i < tmp.length; i++)
         str += '[' + tmp[i] + '], ';
-      console.log('tmp: ' + str);
+      //console.log('tmp: ' + str);
       this.weights.push(tmp);
     }
-    console.log('weights:');
+    /*console.log('weights:');
     console.log(this.weights);
     console.log('outputs:');
     console.log(this.outputs);
     console.log('inputs:');
     console.log(this.inputs);
-    console.log('count:' + this.countWeights);
+    console.log('count:' + this.countWeights);*/
   }
 
   setWeights(weights){
@@ -253,7 +288,7 @@ class NeuralNetwork{
       for (let j = 0; j < this.weights[i].length; j++)
         for (let k = 0; k < this.weights[i][j].length; k++)
           this.weights[i][j][k] = weights[ind++];
-    this.showWeights();
+    //this.showWeights();
   }
 
   showWeights(){
@@ -317,12 +352,13 @@ class NeuralNetwork{
 
   draw(g, x, y, w, h){
     g.clearRect(x, y, w, h);
+    g.strokeStyle = 'black';
     g.beginPath();
     g.rect(x, y, w, h);
     g.stroke();
     let fontsize = 10;
     g.font = fontsize + 'px Arial';
-    let r = 10;
+    let r = 5;
     let xstart = x + 4 * r, ystart = y + 2 * r;
     let xdistance = (w - 8 * r) / this.weights.length;
     for (let i = 0; i < this.weights.length; i++){
@@ -342,13 +378,12 @@ class NeuralNetwork{
           g.moveTo(xstart + xdistance * i, ystart + leftydistance * k);
           g.lineTo(xstart + xdistance * (i + 1), ystart + rightydistance * j);
           g.stroke();
-          g.fillText(tostr(this.weights[i][j][k]),
+          /*g.fillText(tostr(this.weights[i][j][k]),
             xstart + xdistance * (2 * i + 1) / 2,
-            ystart + (leftydistance * k + rightydistance * j) / 2);
+            ystart + (leftydistance * k + rightydistance * j) / 2);*/
         }
       }
     }
-    g.strokeStyle = 'black';
     g.lineWidth = 1;
     for (let i = 0; i < this.outputs.length; i++){
       let ydistance = (h - 4 * r - fontsize) / (this.outputs[i].length - 1);

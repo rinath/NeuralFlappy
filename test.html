@@ -25,15 +25,15 @@
     let n = 60;
     for (let i = 0; i < n; i++){
       for (let j = 0; j < n; j++){
-        let value = rastrigins(-10 + 20 * i / (n - 1), -10 + 20 * j / (n - 1));
+        let value = paraboloid(-10 + 20 * i / (n - 1), -10 + 20 * j / (n - 1));
         let compress = 1 / (1 + Math.exp(-value / 100));
         g.fillStyle = 'rgb(' + compress * 255 + ',0,' + (1 - compress) * 255;
         g.fillRect(i * imgWidth / (n - 1), j * imgWidth / (n - 1), imgWidth / (n - 3), imgWidth / (n - 3));
       }
     }
     let points = [];
-    let anneal = new SimulatedAnnealing(2, 5, 0.99, false);
-    n = 300;
+    let anneal = new SimulatedAnnealing(2, 2, 0.99, false);
+    n = 100;
     g.beginPath();
     for (let i = 0; i < n; i++){
       let point = anneal.generateState();
@@ -41,7 +41,7 @@
       let color = i / (n - 1) * 255;
       g.strokeStyle = 'green';
       g.lineTo((point[0] + 10) * imgWidth / 20, (point[1] + 10) * imgWidth / 20);
-      let fitness = rastrigins(point[0], point[1]);
+      let fitness = paraboloid(point[0], point[1]);
       console.log(tostr(point[0]) + ', ' + tostr(point[1]));
       anneal.updateState(fitness);
     }
