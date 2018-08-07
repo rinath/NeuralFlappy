@@ -407,12 +407,12 @@ class NeuralNetwork {
     }
     g.lineWidth = 1;
     g.strokeStyle = 'black';
-    g.beginPath();
     for (let i = 0; i < this.outputs.length; i++){
       let ydistance = (h - 4 * r - fontsize) / (this.outputs[i].length - 1);
       for (let j = 0; j < this.outputs[i].length; j++){
         if (i == this.outputs.length - 1 && j == this.outputs[i].length - 1)
           continue;
+        g.beginPath();
         g.arc(xstart + xdistance * i, ystart + ydistance * j, r, 0, 7);
         let str = '';
         if (i == 0)
@@ -420,8 +420,8 @@ class NeuralNetwork {
         else
           str = tostr(this.inputs[i][j]) + ' > ' + tostr(this.outputs[i][j]);
         g.fillText(str, xstart + xdistance * i - g.measureText(str).width / 2, ystart + ydistance * j + r + fontsize + 3);
+        g.stroke();
       }
     }
-    g.stroke();
   }
 }
