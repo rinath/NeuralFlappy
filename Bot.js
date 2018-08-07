@@ -1,11 +1,12 @@
 class BasicBot {
   constructor(world, cols){
+    this.world = world;
     this.cols = cols;
     this.birb = new Birb(world.getHeight(), cols);
     this.birb.setWallCollisionHandler(this.onCollision.bind(this));
     this.birb.setColumnCollisionHandler(this.onCollision.bind(this));
     this.mIsAlive = true;
-    this.neuralNet = new NeuralNetwork(5, 6, 1);
+    this.neuralNet = new NeuralNetwork(5, 3, 1);
     this.fitness = 0;
     this.frame = 0;
     this.nearestHoleY = 0;
@@ -41,6 +42,10 @@ class BasicBot {
       nearestColumn = [nearestColumn[0] / 300, nearestColumn[1] / 50];
       let data = nearestColumn.concat([this.birb.getY() / 300, this.birb.vel / 10, gameSpeed / 10]);
       let output = this.neuralNet.forwardPropagation(data);
+      if (this.world.isDebugging()){
+        this.neuralNet.showWeights();
+        console.log('data:', data, ', output:', output);
+      }
       if (output[0] > 0.5)
         this.birb.jump();
       if (output[0] > 2)
@@ -65,8 +70,21 @@ class BotSA extends BasicBot {
     this.annealing.updateState(this.getFitness() / 100);
     this.setWeights(this.annealing.generateState());
   }
-  draw(g){
-    super.draw(g, 'red');
+}
+
+class BotRANDOM extends BasicBot {
+  constructor(world, cols){
+    super(world, cols);
+    let numberOfWeights = this.getNeuralNet().getAmountOfWeights();
+    this.randomData = [];
+    for (let i = 0; i < numberOfWeights; i++)
+      this.randomData.push(Math.random() * 20 - 10);
+  }
+  onCollision(){
+    super.onCollision();
+    for (let i = 0; i < this.randomData.length; i++)
+      this.randomData[i] = Math.random() * 20 - 10;
+    this.setWeights(this.randomData);
   }
 }
 
@@ -76,12 +94,12 @@ class BotGA {
     this.world = world;
     this.epoch = 0;
     this.bots = [];
-    let population = 20;
+    let population = 50;
     for (let i = 0; i < population; i++){
       this.bots.push(new BasicBot(world, cols));
     }
     this.ga = new RCGA(population, 0.3);
-    this.ga.addFeature(-100, 100, this.bots[0].getNeuralNet().getAmountOfWeights())
+    this.ga.addFeature(-10, 10, this.bots[0].getNeuralNet().getAmountOfWeights());
   }
   isAlive(){
     for (let bot of this.bots)
@@ -100,7 +118,6 @@ class BotGA {
       this.bots[i].setWeights(this.ga.getCreature(i));
     }
     this.ga.newEpoch();
-    //this.ga.showData();
   }
   getNeuralNet(){
     for (let bot of this.bots)
@@ -108,8 +125,11 @@ class BotGA {
         return bot.getNeuralNet();
     return this.bots[0].getNeuralNet();
   }
-  draw(g){
+  getFitness(){
+    return this.ga.getFittestFitness();
+  }
+  draw(g, color){
     for (let bot of this.bots)
-      bot.draw(g, 'green');
+      bot.draw(g, color);
   }
 }

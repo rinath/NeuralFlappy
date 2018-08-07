@@ -137,13 +137,16 @@ class RCGA {
     this.epoch++;
     this.tournamentSelection();
     let fittestIndex = this.getFittestIndex();
+    console.log('maxFitness:' + this.maxFitness + ', fitness[fittestIndex]:' + this.fitness[fittestIndex]);
     if (this.maxFitness < this.fitness[fittestIndex]){
       this.maxFitness = this.fitness[fittestIndex];
       for (let i = 0; i < this.features; i++)
         this.fittest[i] = this.data[this.active][fittestIndex][i];
+      console.log('new maxFitness:' + this.maxFitness + ', data:', this.fittest);
     }
     for (let i = 0; i < this.features; i++)
       this.data[1 - this.active][0][i] = this.fittest[i];
+    console.log('this.data[1-active][0]', this.data[1 - this.active][0]);
     for (let i = 1; i < this.parents.length; i++){
       this.nPointCrossover(this.data[this.active][this.parents[i][0]], this.data[this.active][this.parents[i][1]],
         this.data[1 - this.active][i]);
@@ -324,7 +327,7 @@ class NeuralNetwork {
         this.inputs[i + 1][j] = 0;
         for (let k = 0; k < this.weights[i][j].length; k++){
           this.outputs[i + 1][j] += this.outputs[i][k] * this.weights[i][j][k];
-          this.inputs[i + 1][j] += this.inputs[i][k] * this.weights[i][j][k];
+          this.inputs[i + 1][j] += this.outputs[i][k] * this.weights[i][j][k];
         }
         this.outputs[i + 1][j] = this.sigmoidActivation(this.outputs[i + 1][j]);
       }
@@ -360,21 +363,39 @@ class NeuralNetwork {
     g.font = fontsize + 'px Arial';
     let r = 5;
     let xstart = x + 4 * r, ystart = y + 2 * r;
-    let xdistance = (w - 8 * r) / this.weights.length;
+    let xdistance = (w - 12 * r) / this.weights.length;
+    let negativeColor = [0, 0, 255];
+    let positiveColor = [255, 0, 0];
+    let zeroColor = [255, 255, 255];
     for (let i = 0; i < this.weights.length; i++){
       let rightydistance = (h - 4 * r - fontsize) / (this.weights[i].length);
       for (let j = 0; j < this.weights[i].length; j++){
         let average = 0;
+        let averageWeight = 0;
         for (let k = 0; k < this.weights[i][j].length; k++){
           average += Math.abs(this.weights[i][j][k] * this.outputs[i][k]);
+          averageWeight += Math.abs(this.weights[i][j][k]);
         }
         average /= this.weights[i][j].length;
+        averageWeight /= this.weights[i][j].length;
         let leftydistance = (h - 4 * r - fontsize) / (this.weights[i][j].length - 1);
         for (let k = 0; k < this.weights[i][j].length; k++){
           g.beginPath();
-          let activated = this.hardTanhActivation(this.weights[i][j][k] * this.outputs[i][k] / average / 2);
-          g.strokeStyle = 'rgb(' + (127 + 126 * activated) + ',0,' + (127 - 126 * activated) + ')';
-          g.lineWidth = Math.abs(activated * 4);
+          let color = this.hardTanhActivation(this.weights[i][j][k] * this.outputs[i][k] / average / 2);
+          let str = 'rgb(';
+          for (let l = 0; l < 3; l++){
+            if (color > 0){
+              str += (positiveColor[l] * color + zeroColor[l] * (1 - color));
+            }
+            else {
+              str += (-negativeColor[l] * color + zeroColor[l] * (1 + color));
+            }
+            if (l < 2)
+              str += ',';
+          }
+          //g.strokeStyle = 'rgb(' + (127 + 126 * color) + ',0,' + (127 - 126 * color) + ')';
+          g.strokeStyle = str + ')';
+          g.lineWidth = this.hardTanhActivation(this.weights[i][j][k] / averageWeight / 2) * 6 + 1;
           g.moveTo(xstart + xdistance * i, ystart + leftydistance * k);
           g.lineTo(xstart + xdistance * (i + 1), ystart + rightydistance * j);
           g.stroke();
@@ -385,14 +406,14 @@ class NeuralNetwork {
       }
     }
     g.lineWidth = 1;
+    g.strokeStyle = 'black';
+    g.beginPath();
     for (let i = 0; i < this.outputs.length; i++){
       let ydistance = (h - 4 * r - fontsize) / (this.outputs[i].length - 1);
       for (let j = 0; j < this.outputs[i].length; j++){
         if (i == this.outputs.length - 1 && j == this.outputs[i].length - 1)
           continue;
-        g.beginPath();
         g.arc(xstart + xdistance * i, ystart + ydistance * j, r, 0, 7);
-        g.stroke();
         let str = '';
         if (i == 0)
           str = tostr(this.inputs[i][j]);
@@ -401,5 +422,6 @@ class NeuralNetwork {
         g.fillText(str, xstart + xdistance * i - g.measureText(str).width / 2, ystart + ydistance * j + r + fontsize + 3);
       }
     }
+    g.stroke();
   }
 }

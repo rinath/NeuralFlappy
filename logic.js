@@ -25,12 +25,18 @@ class World {
     this.epoch = 0;
     this.cols = new Columns(this.width, this.height);
     this.cols.setOnColumnPassedHandler(this.onColumnPassed.bind(this));
-    this.bots = [new BotGA(this, this.cols), new BotSA(this, this.cols)];
-    //this.bots = [new BotSA(this, this.cols)];
+    this.bots = [new BotGA(this, this.cols), new BotSA(this, this.cols), new BotRANDOM(this, this.cols)];
+    this.botsName = ['Genetic algorithm', 'Simulated annealing', 'Random weights'];
+    this.botsColor = ['red', 'blue', 'green'];
+    this.fitnessProgress = new FitnessProgress(this.botsName, this.botsColor);
     this.resetGame();
+    this.debug = false;
   }
   getHeight(){
     return this.height;
+  }
+  isDebugging(){
+    return this.debug;
   }
   update(){
     for (let i = 0; i < this.updatesPerFrame; i++){
@@ -40,8 +46,9 @@ class World {
           alive++;
       if (alive == 0){
         this.resetGame();
-        for (let bot of this.bots){
-          bot.reset();
+        for (let j = 0; j < this.bots.length; j++){
+          this.fitnessProgress.addFitness(j, this.bots[j].getFitness());
+          this.bots[j].reset();
         }
         this.epoch++;
       }
@@ -54,26 +61,34 @@ class World {
   }
   draw(){
     this.g.strokeStyle = 'black';
+    this.g.fillStyle = 'black';
     this.g.lineWidth = 1;
     this.g.clearRect(0, 0, this.width, this.height);
+    this.cols.draw(this.g);
     let once = true;
-    for (let bot of this.bots){
-      bot.draw(this.g);
-      if (bot.isAlive() && once){
-        bot.getNeuralNet().draw(this.g, 1000, 0, 300, 180);
+    for (let i = 0; i < this.bots.length; i++){
+      this.bots[i].draw(this.g, this.botsColor[i]);
+      //this.bots[i].drawFitness(this.g, 700, 0, 300, 400);
+      if (this.bots[i].isAlive() && once){
+        this.bots[i].getNeuralNet().draw(this.g, 1000, 0, 300, 400);
         once = false;
       }
     }
+    this.fitnessProgress.draw(this.g, 700, 0, 300, 400);
+    //this.bots[1].drawFitness(this.g, this.botsColor[1], 700, 0, 300, 400);
     let txtSize = 15;
+    this.g.strokeStyle = 'black';
+    this.g.fillStyle = 'black';
     this.g.font = txtSize + 'px Arial';
     let str = [
       'Score: ' + this.score, //this.cols.getScore(),
       'HighScore: ' + this.highScore,
+      'Update: ' + tostr(this.measuredUpdateTime) + ' ms',
+      'Draw: ' + tostr(this.measuredDrawTime) + ' ms',
       'Epoch: ' + this.epoch,
+      'GameSpeed: ' + tostr(this.gameSpeed)
       /*'Teperature: ' + tostr(this.bots[0].getTemperature()),
       'Distance: ' + tostr(this.birbs[0].getDistance()),
-      'Update: ' + tostr(this.measuredUpdateTime),
-      'Draw: ' + tostr(this.measuredDrawTime),
       'Jumped: ' + this.jumped*/
     ];
     let y = txtSize;
@@ -81,7 +96,7 @@ class World {
       this.g.fillText(str[i], 5, y);
       y += txtSize;
     }
-    this.cols.draw(this.g);
+    this.g.fillText('Press \'r\' to speed up, or \'p\' to pause (capslock turned off)', 280, txtSize);
   }
   resetGame(){
     this.gameSpeed = 3;
@@ -98,7 +113,7 @@ class World {
           this.updatesPerFrame = this.UPDATES_PER_FRAME_NORMAL;
         break;
       case 'e':
-        this.basicBot.reset();
+        this.debug = !this.debug;
         break;
     }
   }

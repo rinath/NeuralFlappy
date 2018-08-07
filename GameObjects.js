@@ -138,7 +138,8 @@ class Columns {
         return [this.cols[i].x + this.w - birb.x, this.cols[i].h - birb.getY() + this.hole / 2];
       }
     }
-    return [0, 0];
+    console.log('NO NEAREST COLUMN');
+    return [1000, this.height / 2 - birb.getY()];
   }
 
   reset(){
@@ -146,7 +147,7 @@ class Columns {
   }
 
   update(gameSpeed){
-    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 600)
+    if (this.cols.length == 0 || this.width - this.cols[this.cols.length - 1].x > 400)
       this.cols.push({x: this.width, h: Math.random() * (this.height * 0.9 - this.hole) + this.height * 0.05});
     if (this.cols.length > 0 && this.cols[0].x < -this.w * 2){
       this.onColumnPassed();
